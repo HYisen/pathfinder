@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>pathfinder</artifactId>
+        <groupId>net.alexhyisen</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>gui</artifactId>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>11</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>11</version>
+        </dependency>
+        <dependency>
+            <groupId>net.alexhyisen</groupId>
+            <artifactId>utility</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <!--&lt;!&ndash; https://mvnrepository.com/artifact/org.bytedeco.javacpp-presets/opencv &ndash;&gt;-->
+        <!--<dependency>-->
+        <!--<groupId>org.bytedeco.javacpp-presets</groupId>-->
+        <!--<artifactId>opencv</artifactId>-->
+        <!--<version>3.4.3-1.4.3</version>-->
+        <!--</dependency>-->
+
+
+        <!--<dependency>-->
+            <!--<groupId>org.opencv</groupId>-->
+            <!--<artifactId>opencv</artifactId>-->
+            <!--<version>4.0.0</version>-->
+            <!--<systemPath>C:/code/opencv/build/java/opencv-400.jar</systemPath>-->
+            <!--<scope>system</scope>-->
+        <!--</dependency>-->
+
+        <!-- https://mvnrepository.com/artifact/org.openpnp/opencv -->
+        <dependency>
+            <groupId>org.openpnp</groupId>
+            <artifactId>opencv</artifactId>
+            <version>3.4.2-0</version>
+        </dependency>
+    </dependencies>
+</project>
