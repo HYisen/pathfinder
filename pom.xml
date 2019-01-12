@@ -39,6 +39,7 @@
     <modules>
         <module>utility</module>
         <module>gui</module>
+        <module>world</module>
     </modules>
 
 
