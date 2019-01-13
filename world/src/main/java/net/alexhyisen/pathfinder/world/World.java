@@ -131,10 +131,10 @@ public class World {
 
         var land = new Binder()
                 .setVertices(
-                        1, 1, 0.0f, 1f, 1f, 1f,
-                        1, -1, 0.0f, 1f, 1f, 1f,
-                        -1, -1, 0.0f, 1f, 1f, 1f,
-                        -1, 1, 0.0f, 1f, 1f, 1f
+                        1, 1, 0.0f, 0.212f, 0.180f, 0.169f,
+                        1, -1, 0.0f, 0.212f, 0.180f, 0.169f,
+                        -1, -1, 0.0f, 0.212f, 0.180f, 0.169f,
+                        -1, 1, 0.0f, 0.212f, 0.180f, 0.169f
                 )
                 .setIndices(
                         0, 1, 2,
@@ -144,10 +144,10 @@ public class World {
 
         var sky = new Binder()
                 .setVertices(
-                        1, 1, 1, 0, 0, 0,
-                        1, -1, 1, 0, 0, 0,
-                        -1, -1, 1, 0, 0, 0,
-                        -1, 1, 1, 0, 0, 0
+                        1, 1, 1, 0.494f, 0.808f, 0.957f,
+                        1, -1, 1, 0.494f, 0.808f, 0.957f,
+                        -1, -1, 1, 0.494f, 0.808f, 0.957f,
+                        -1, 1, 1, 0.494f, 0.808f, 0.957f
                 )
                 .setIndices(
                         0, 1, 2,
@@ -169,8 +169,20 @@ public class World {
 
         var model = new Matrix4f().rotate((float) Math.toRadians(-55.0), 1, 0, 0);
 
+        int timestamp = (int) glfwGetTime();
+        int count = 0;
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
+
+            int current = (int) glfwGetTime();
+            if (current != timestamp) {
+                timestamp = current;
+                glfwSetWindowTitle(window, count + "FPS");
+                count = 0;
+                System.out.println(timestamp);
+            } else {
+                count++;
+            }
 
             float grey = oscillator.next();
             glClearColor(grey, grey, grey, 1.0f);
