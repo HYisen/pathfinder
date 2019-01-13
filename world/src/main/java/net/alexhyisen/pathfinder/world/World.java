@@ -9,6 +9,8 @@ import java.net.URISyntaxException;
 import java.nio.FloatBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -19,6 +21,21 @@ import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.glBindVertexArray;
 
 public class World {
+    private Map<String, Binder> binders = new HashMap<>();
+
+    private boolean[] keys = new boolean[1024];
+    private Camera camera = new Camera(keys);
+
+    private FloatBuffer[] fb = Stream
+            .generate(() -> BufferUtils.createFloatBuffer(16))
+            .limit(4)
+            .toArray(FloatBuffer[]::new);
+
+    public static void main(String[] args) {
+        var world = new World();
+        world.go();
+    }
+
     private static String loadShaderCode(String name) {
         var loader = Thread.currentThread().getContextClassLoader();
         try {
@@ -58,10 +75,24 @@ public class World {
         return program;
     }
 
-    public static void main(String[] args) {
-        var keys = new boolean[1024];
-        var camera = new Camera(keys);
+    private void draw(String name, Matrix4f model, Matrix4f transform) {
+        var binder = binders.get(name);
+        glUseProgram(binder.getProgram());
+        glBindVertexArray(binder.getVao());
+        glUniformMatrix4fv(glGetUniformLocation(binder.getProgram(), "transform"), false,
+                transform.get(fb[0]));
+        glUniformMatrix4fv(glGetUniformLocation(binder.getProgram(), "model"), false,
+                model.get(fb[1]));
+        glUniformMatrix4fv(glGetUniformLocation(binder.getProgram(), "view"), false,
+                camera.getView().get(fb[2]));
+        glUniformMatrix4fv(glGetUniformLocation(binder.getProgram(), "projection"), false,
+                camera.getProjection().get(fb[3]));
 
+        glDrawElements(GL_TRIANGLES, binder.getCount(), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+    }
+
+    private void go() {
         glfwInit();
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -98,6 +129,9 @@ public class World {
                     case GLFW_KEY_END:
                         glDisable(GL_DEPTH_TEST);
                         break;
+                    case GLFW_KEY_F:
+                        camera.print();
+                        break;
                     default:
                         break;
                 }
@@ -106,14 +140,17 @@ public class World {
             }
         });
 
-//        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-//        glfwSetCursorPosCallback(window, camera::handleCursor);
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        glfwSetCursorPosCallback(window, camera::handleCursor);
 
         glfwSetScrollCallback(window, camera::handleScroll);
 
         GL.createCapabilities();
 
-        var one = new Binder()
+        var program = genProgram("one", "two");
+
+
+        binders.put("one", new Binder()
                 .setVertices(
                         -0.8f, 0, 0.0f, 1.0f, 0.0f, 0.0f,
                         0, 0.8f, 0.0f, 0.0f, 1.0f, 0.0f,
@@ -127,9 +164,11 @@ public class World {
                         2, 3, 4,
                         0, 3, 4
                 )
-                .init(GL_STATIC_DRAW);
+                .init(GL_STATIC_DRAW)
+                .setProgram(program)
+        );
 
-        var land = new Binder()
+        binders.put("land", new Binder()
                 .setVertices(
                         1, 1, 0.0f, 0.212f, 0.180f, 0.169f,
                         1, -1, 0.0f, 0.212f, 0.180f, 0.169f,
@@ -140,9 +179,11 @@ public class World {
                         0, 1, 2,
                         3, 2, 0
                 )
-                .init(GL_STATIC_DRAW);
+                .init(GL_STATIC_DRAW)
+                .setProgram(program)
+        );
 
-        var sky = new Binder()
+        binders.put("sky", new Binder()
                 .setVertices(
                         1, 1, 1, 0.494f, 0.808f, 0.957f,
                         1, -1, 1, 0.494f, 0.808f, 0.957f,
@@ -153,21 +194,19 @@ public class World {
                         0, 1, 2,
                         3, 2, 0
                 )
-                .init(GL_STATIC_DRAW);
+                .init(GL_STATIC_DRAW)
+                .setProgram(program)
+        );
 
-        var program = genProgram("one", "two");
 
         var oscillator = new Oscillator(100000);
 
-        FloatBuffer[] fb = Stream
-                .generate(() -> BufferUtils.createFloatBuffer(16))
-                .limit(4)
-                .toArray(FloatBuffer[]::new);
 
         var trans = new Matrix4f();
         final Matrix4f eye = new Matrix4f();
 
-        var model = new Matrix4f().rotate((float) Math.toRadians(-55.0), 1, 0, 0);
+//        var model = new Matrix4f().rotate((float) Math.toRadians(-55.0), 1, 0, 0);
+        var model = new Matrix4f();
 
         int timestamp = (int) glfwGetTime();
         int count = 0;
@@ -190,52 +229,61 @@ public class World {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             glUseProgram(program);
+
+            draw("one", model, new Matrix4f()
+                    .rotate((float) (grey * Math.PI), 0, 0, 1)
+                    .translate(0.2f, 0, 0)
+            );
+
+            draw("land", model, eye);
+            draw("sky", model, eye);
+
 //            grey = grey - 0.5f;
 //            glUniform3f(glGetUniformLocation(program, "bias"), 0, grey, 0);
-            glBindVertexArray(one.getVao());
-            trans.set(eye);
-            glUniformMatrix4fv(glGetUniformLocation(program, "transform"), false,
-                    trans
-                            .rotate((float) (grey * Math.PI), 0, 0, 1)
-                            .translate(0.2f, 0, 0)
-                            .get(fb[0]));
-            glUniformMatrix4fv(glGetUniformLocation(program, "model"), false,
-                    model.get(fb[1]));
-            glUniformMatrix4fv(glGetUniformLocation(program, "view"), false,
-                    camera.getView().get(fb[2]));
-            glUniformMatrix4fv(glGetUniformLocation(program, "projection"), false,
-                    camera.getProjection().get(fb[3]));
+//            glBindVertexArray(one.getVao());
+//            trans.set(eye);
+//            glUniformMatrix4fv(glGetUniformLocation(program, "transform"), false,
+//                    trans
+//                            .rotate((float) (grey * Math.PI), 0, 0, 1)
+//                            .translate(0.2f, 0, 0)
+//                            .get(fb[0]));
+//            glUniformMatrix4fv(glGetUniformLocation(program, "model"), false,
+//                    model.get(fb[1]));
+//            glUniformMatrix4fv(glGetUniformLocation(program, "view"), false,
+//                    camera.getView().get(fb[2]));
+//            glUniformMatrix4fv(glGetUniformLocation(program, "projection"), false,
+//                    camera.getProjection().get(fb[3]));
+//
+//            glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
+//            glBindVertexArray(0);
 
-            glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
-            glBindVertexArray(0);
+//            glBindVertexArray(land.getVao());
+//            trans.set(eye);
+//            glUniformMatrix4fv(glGetUniformLocation(program, "transform"), false,
+//                    eye.get(fb[0]));
+//            glUniformMatrix4fv(glGetUniformLocation(program, "model"), false,
+//                    model.get(fb[1]));
+//            glUniformMatrix4fv(glGetUniformLocation(program, "view"), false,
+//                    camera.getView().get(fb[2]));
+//            glUniformMatrix4fv(glGetUniformLocation(program, "projection"), false,
+//                    camera.getProjection().get(fb[3]));
+//
+//            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+//            glBindVertexArray(0);
 
-            glBindVertexArray(land.getVao());
-            trans.set(eye);
-            glUniformMatrix4fv(glGetUniformLocation(program, "transform"), false,
-                    eye.get(fb[0]));
-            glUniformMatrix4fv(glGetUniformLocation(program, "model"), false,
-                    model.get(fb[1]));
-            glUniformMatrix4fv(glGetUniformLocation(program, "view"), false,
-                    camera.getView().get(fb[2]));
-            glUniformMatrix4fv(glGetUniformLocation(program, "projection"), false,
-                    camera.getProjection().get(fb[3]));
-
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-            glBindVertexArray(0);
-
-            glBindVertexArray(sky.getVao());
-            trans.set(eye);
-            glUniformMatrix4fv(glGetUniformLocation(program, "transform"), false,
-                    eye.get(fb[0]));
-            glUniformMatrix4fv(glGetUniformLocation(program, "model"), false,
-                    model.get(fb[1]));
-            glUniformMatrix4fv(glGetUniformLocation(program, "view"), false,
-                    camera.getView().get(fb[2]));
-            glUniformMatrix4fv(glGetUniformLocation(program, "projection"), false,
-                    camera.getProjection().get(fb[3]));
-
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-            glBindVertexArray(0);
+//            glBindVertexArray(sky.getVao());
+//            trans.set(eye);
+//            glUniformMatrix4fv(glGetUniformLocation(program, "transform"), false,
+//                    eye.get(fb[0]));
+//            glUniformMatrix4fv(glGetUniformLocation(program, "model"), false,
+//                    model.get(fb[1]));
+//            glUniformMatrix4fv(glGetUniformLocation(program, "view"), false,
+//                    camera.getView().get(fb[2]));
+//            glUniformMatrix4fv(glGetUniformLocation(program, "projection"), false,
+//                    camera.getProjection().get(fb[3]));
+//
+//            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+//            glBindVertexArray(0);
 
             glfwSwapBuffers(window);
         }

@@ -13,6 +13,8 @@ public class Binder {
     private int vbo;
     private int ebo;
 
+    private int program;
+
     private float[] vertices;
     private int[] indices;
 
@@ -58,6 +60,15 @@ public class Binder {
         return this;
     }
 
+    public int getProgram() {
+        return program;
+    }
+
+    public Binder setProgram(int program) {
+        this.program = program;
+        return this;
+    }
+
     public Binder init(int usage) {
         vao = glGenVertexArrays();
         vbo = glGenBuffers();
@@ -85,6 +96,10 @@ public class Binder {
 
     int getVao() {
         return vao;
+    }
+
+    int getCount() {
+        return indices.length;
     }
 
     void delete() {
