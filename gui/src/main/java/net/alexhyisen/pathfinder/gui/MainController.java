@@ -7,14 +7,10 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
-import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -23,18 +19,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.IntConsumer;
 
 public class MainController {
-    @FXML
-    private Button nextButton;
-    @FXML
-    private Canvas canvas;
-    @FXML
-    private ImageView imageView0;
-    @FXML
-    private ImageView imageView1;
-    @FXML
-    private Slider slider;
-    @FXML
-    private ToggleButton toggleButton;
+//    @FXML
+//    private Button nextButton;
+//    @FXML
+//    private Canvas canvas;
+//    @FXML
+//    private ImageView imageView0;
+//    @FXML
+//    private ImageView imageView1;
+//    @FXML
+//    private Slider slider;
+//    @FXML
+//    private ToggleButton toggleButton;
 
     @FXML
     private ChoiceBox<String> modeChoiceBox;
@@ -66,41 +62,41 @@ public class MainController {
     @FXML
     private ToggleButton playToggleButton;
 
-    private int count = 0;
-    private Image image0;
-    private Image image1;
+//    private int count = 0;
+//    private Image image0;
+//    private Image image1;
 
     private ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture sf;
 
     private Spinner<Integer> frameSpinner;
 
-    @FXML
-    protected void onButtonAction() {
-        System.out.println("BANG!");
-        var gc = canvas.getGraphicsContext2D();
-        gc.setFill(Color.BLACK);
-        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-        gc.setFill(Color.CYAN);
-        gc.fillRect(100, 50, 50, 100);
-    }
-
-    @FXML
-    protected void onNextButtonAction() {
-        slider.setValue(slider.getValue() + 1);
-    }
-
-    private void showImage(int id) {
-        String path0 = "file:///C:\\code\\dataset\\sequences\\00\\image_0\\";
-        String path1 = "file:///C:\\code\\dataset\\sequences\\00\\image_1\\";
-        String file = String.format("%06d.png", id);
-        System.out.println("showImage " + id);
-        slider.setValue(id);
-        image0 = new Image(path0 + file);
-        image1 = new Image(path1 + file);
-        imageView0.setImage(image0);
-        imageView1.setImage(image1);
-    }
+//    @FXML
+//    protected void onButtonAction() {
+//        System.out.println("BANG!");
+//        var gc = canvas.getGraphicsContext2D();
+//        gc.setFill(Color.BLACK);
+//        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+//        gc.setFill(Color.CYAN);
+//        gc.fillRect(100, 50, 50, 100);
+//    }
+//
+//    @FXML
+//    protected void onNextButtonAction() {
+//        slider.setValue(slider.getValue() + 1);
+//    }
+//
+//    private void showImage(int id) {
+//        String path0 = "file:///C:\\code\\dataset\\sequences\\00\\image_0\\";
+//        String path1 = "file:///C:\\code\\dataset\\sequences\\00\\image_1\\";
+//        String file = String.format("%06d.png", id);
+//        System.out.println("showImage " + id);
+//        slider.setValue(id);
+//        image0 = new Image(path0 + file);
+//        image1 = new Image(path1 + file);
+//        imageView0.setImage(image0);
+//        imageView1.setImage(image1);
+//    }
 
     private DummyProgress slamDP = new DummyProgress(1200, "SLAM", ses, this::updateSlamProgress);
     private DummyProgress meshDP = new DummyProgress(1000, "Mesh", ses, this::updateMeshProgress);
@@ -176,9 +172,12 @@ public class MainController {
     @FXML
     public void handlePlayToggleButtonAction() {
         if (playToggleButton.isSelected()) {
-            sf = ses.scheduleAtFixedRate(() -> {
-                frameSpinner.getValueFactory().increment(1);
-            }, 100, 100, TimeUnit.MILLISECONDS);
+            sf = ses.scheduleAtFixedRate(
+                    () -> frameSpinner.getValueFactory().increment(1),
+                    100,
+                    100,
+                    TimeUnit.MILLISECONDS
+            );
         } else {
             sf.cancel(false);
         }
@@ -202,14 +201,14 @@ public class MainController {
         private ScheduledFuture sf;
         private IntConsumer handler;
 
-        public DummyProgress(int max, String name, ScheduledExecutorService ses, IntConsumer handler) {
+        DummyProgress(int max, String name, ScheduledExecutorService ses, IntConsumer handler) {
             this.max = max;
             this.name = name;
             this.ses = ses;
             this.handler = handler;
         }
 
-        public void action(boolean isSelected) {
+        void action(boolean isSelected) {
             if (isSelected) {
                 System.out.println(name + " play");
                 sf = ses.scheduleAtFixedRate(() -> {
