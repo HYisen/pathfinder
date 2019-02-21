@@ -113,7 +113,15 @@ public class Camera {
             pos.add(new Vector3f(front).cross(up).normalize().mul(speed * deltaTime));
             view = null;
         }
-        pos.y = 0;
+        if (keys[GLFW_KEY_F]) {
+            pos.y += speed * deltaTime;
+            view = null;
+        }
+        if (keys[GLFW_KEY_C]) {
+            pos.y -= speed * deltaTime;
+            view = null;
+        }
+//        pos.y = 0;
 
         if (keys[GLFW_KEY_UP]) {
             rotate(sensitivity0 * deltaTime, 0);
