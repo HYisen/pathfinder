@@ -1,5 +1,6 @@
 package net.alexhyisen.pathfinder.world;
 
+import net.alexhyisen.pathfinder.utility.Loader;
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL;
@@ -9,9 +10,7 @@ import java.net.URISyntaxException;
 import java.nio.FloatBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -149,6 +148,32 @@ public class World {
 
         var program = genProgram("one", "two");
 
+        var loader = new Loader();
+        try {
+            loader.load();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        final List<double[]> ptrs = loader.getVertexes();
+        float[] vertices = new float[ptrs.size() * 6];
+        final float metric = 50.0f;
+        final var rand = new Random();
+        for (int k = 0; k < ptrs.size(); k++) {
+            vertices[6 * k] = (float) ptrs.get(k)[0] / metric;
+            vertices[6 * k + 1] = (float) ptrs.get(k)[1] / metric;
+            vertices[6 * k + 2] = (float) ptrs.get(k)[2] / metric;
+            vertices[6 * k + 3] = rand.nextFloat();
+            vertices[6 * k + 4] = rand.nextFloat();
+            vertices[6 * k + 5] = rand.nextFloat();
+        }
+
+        binders.put("items", new Binder()
+                .setVertices(vertices)
+                .setIndices(loader.getShapes().stream().flatMapToInt(Arrays::stream).toArray())
+                .init(GL_STATIC_DRAW)
+                .setProgram(program)
+        );
+
 
         binders.put("one", new Binder()
                 .setVertices(
@@ -237,6 +262,7 @@ public class World {
 
             draw("land", model, eye);
             draw("sky", model, eye);
+            draw("items", model, eye);
 
 //            grey = grey - 0.5f;
 //            glUniform3f(glGetUniformLocation(program, "bias"), 0, grey, 0);
