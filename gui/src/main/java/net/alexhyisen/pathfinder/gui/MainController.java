@@ -11,11 +11,9 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import net.alexhyisen.pathfinder.world.World;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.IntConsumer;
 
 public class MainController {
@@ -68,6 +66,11 @@ public class MainController {
 
     private ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture sf;
+
+    private World world;
+
+    private ExecutorService es = Executors.newCachedThreadPool();
+    private Future wf;
 
     private Spinner<Integer> frameSpinner;
 
@@ -184,6 +187,23 @@ public class MainController {
     }
 
     @FXML
+    public void handleViewToggleButtonAction() {
+        if (viewToggleButton.isSelected()) {
+            world = new World();
+            wf = es.submit(() -> world.open(false));
+        } else {
+            world.close();
+            wf.cancel(false);
+            System.out.println(wf.isDone() + " " + wf.isCancelled());
+        }
+    }
+
+    void shutdown() {
+        System.out.println("Diablo");
+        es.shutdown();
+    }
+
+    @FXML
     public void handleSlamToggleButtonAction() {
         slamDP.action(slamToggleButton.isSelected());
     }
@@ -223,5 +243,4 @@ public class MainController {
             }
         }
     }
-
 }

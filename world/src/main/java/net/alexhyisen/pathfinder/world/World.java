@@ -25,6 +25,8 @@ public class World {
     private boolean[] keys = new boolean[1024];
     private Camera camera = new Camera(keys);
 
+    private long window=-1;
+
     private FloatBuffer[] fb = Stream
             .generate(() -> BufferUtils.createFloatBuffer(16))
             .limit(4)
@@ -32,7 +34,7 @@ public class World {
 
     public static void main(String[] args) {
         var world = new World();
-        world.go();
+        world.open(true);
     }
 
     private static String loadShaderCode(String name) {
@@ -91,14 +93,18 @@ public class World {
         glBindVertexArray(0);
     }
 
-    private void go() {
+    public void close() {
+        glfwSetWindowShouldClose(window, true);
+    }
+
+    public void open(boolean bindMouse) {
         glfwInit();
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-        long window = glfwCreateWindow(1000, 1000, "World", 0, 0);
+        window = glfwCreateWindow(1000, 1000, "World", 0, 0);
         if (window == 0) {
             System.out.println("Failed to creat GLFW window.");
             glfwTerminate();
@@ -139,10 +145,12 @@ public class World {
             }
         });
 
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        glfwSetCursorPosCallback(window, camera::handleCursor);
+        if (bindMouse) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            glfwSetCursorPosCallback(window, camera::handleCursor);
 
-        glfwSetScrollCallback(window, camera::handleScroll);
+            glfwSetScrollCallback(window, camera::handleScroll);
+        }
 
         GL.createCapabilities();
 

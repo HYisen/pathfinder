@@ -9,4 +9,5 @@ module pathfinder.world {
     requires org.lwjgl.glfw.natives;
 
     opens shader;
+    exports net.alexhyisen.pathfinder.world;
 }

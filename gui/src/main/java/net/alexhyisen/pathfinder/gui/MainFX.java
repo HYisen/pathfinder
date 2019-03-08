@@ -12,6 +12,8 @@ public class MainFX extends Application {
         var loader = new FXMLLoader(getClass().getResource("/fxml/main.fxml"));
         var scene = new Scene(loader.load());
         primaryStage.setScene(scene);
+        MainController controller = loader.getController();
+        primaryStage.setOnCloseRequest(v->controller.shutdown());
         primaryStage.show();
     }
 
