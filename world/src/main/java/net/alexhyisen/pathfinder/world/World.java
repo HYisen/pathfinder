@@ -11,7 +11,6 @@ import java.nio.FloatBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -38,12 +37,12 @@ public class World {
         world.open(true);
     }
 
-    public void setPosHandler(Consumer<float[]> posHandler) {
-        camera.setPosHandler(v -> posHandler.accept(new float[]{v.x, v.y, v.z}));
+    public float[] getCameraInfo() {
+        return camera.getData();
     }
 
-    public void setFrontHandler(Consumer<float[]> frontHandler) {
-        camera.setFrontHandler(v -> frontHandler.accept(new float[]{v.x, v.y, v.z}));
+    public void setCameraInfo(float[] data) {
+        camera.setData(data);
     }
 
     private static String loadShaderCode(String name) {

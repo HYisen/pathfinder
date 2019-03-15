@@ -30,19 +30,6 @@ public class Camera {
     private float sensitivity0 = 100f;
     private boolean firstMove = true;
 
-    private Consumer<Vector3f> posHandler = v -> {
-    };
-    private Consumer<Vector3f> frontHandler = v -> {
-    };
-
-    public void setPosHandler(Consumer<Vector3f> posHandler) {
-        this.posHandler = posHandler;
-    }
-
-    public void setFrontHandler(Consumer<Vector3f> frontHandler) {
-        this.frontHandler = frontHandler;
-    }
-
     public Camera(boolean[] keys) {
         this.keys = keys;
     }
@@ -88,7 +75,6 @@ public class Camera {
                 sinPitch,
                 cosYaw * cosPitch
         ).normalize();
-        frontHandler.accept(front);
 
         up = new Vector3f(front).cross(worldUp).normalize().cross(front).normalize();
         view = null;
@@ -114,32 +100,26 @@ public class Camera {
 
         if (keys[GLFW_KEY_W]) {
             pos.add(new Vector3f(front).mul(speed * deltaTime));
-            posHandler.accept(pos);
             view = null;
         }
         if (keys[GLFW_KEY_S]) {
             pos.add(new Vector3f(front).mul(-speed * deltaTime));
-            posHandler.accept(pos);
             view = null;
         }
         if (keys[GLFW_KEY_A]) {
             pos.add(new Vector3f(front).cross(up).normalize().mul(-speed * deltaTime));
-            posHandler.accept(pos);
             view = null;
         }
         if (keys[GLFW_KEY_D]) {
             pos.add(new Vector3f(front).cross(up).normalize().mul(speed * deltaTime));
-            posHandler.accept(pos);
             view = null;
         }
         if (keys[GLFW_KEY_F]) {
             pos.y += speed * deltaTime;
-            posHandler.accept(pos);
             view = null;
         }
         if (keys[GLFW_KEY_C]) {
             pos.y -= speed * deltaTime;
-            posHandler.accept(pos);
             view = null;
         }
 //        pos.y = 0;
@@ -164,6 +144,16 @@ public class Camera {
             view = new Matrix4f().lookAt(pos, new Vector3f(pos).add(front), up);
         }
         return view;
+    }
+
+    float[] getData() {
+        return new float[]{pos.x, pos.y, pos.z, front.x, front.y, front.z};
+    }
+
+    void setData(float[] orig) {
+        pos=new Vector3f(orig[0],orig[1],orig[2]);
+        front=new Vector3f(orig[3],orig[4],orig[5]);
+        view = null;
     }
 
     Matrix4f getProjection() {
