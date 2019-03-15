@@ -11,6 +11,7 @@ import java.nio.FloatBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -25,7 +26,7 @@ public class World {
     private boolean[] keys = new boolean[1024];
     private Camera camera = new Camera(keys);
 
-    private long window=-1;
+    private long window = -1;
 
     private FloatBuffer[] fb = Stream
             .generate(() -> BufferUtils.createFloatBuffer(16))
@@ -35,6 +36,14 @@ public class World {
     public static void main(String[] args) {
         var world = new World();
         world.open(true);
+    }
+
+    public void setPosHandler(Consumer<float[]> posHandler) {
+        camera.setPosHandler(v -> posHandler.accept(new float[]{v.x, v.y, v.z}));
+    }
+
+    public void setFrontHandler(Consumer<float[]> frontHandler) {
+        camera.setFrontHandler(v -> frontHandler.accept(new float[]{v.x, v.y, v.z}));
     }
 
     private static String loadShaderCode(String name) {

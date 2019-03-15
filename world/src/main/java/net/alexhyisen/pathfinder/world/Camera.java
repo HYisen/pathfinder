@@ -3,6 +3,8 @@ package net.alexhyisen.pathfinder.world;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
+import java.util.function.Consumer;
+
 import static org.lwjgl.glfw.GLFW.*;
 
 public class Camera {
@@ -28,6 +30,18 @@ public class Camera {
     private float sensitivity0 = 100f;
     private boolean firstMove = true;
 
+    private Consumer<Vector3f> posHandler = v -> {
+    };
+    private Consumer<Vector3f> frontHandler = v -> {
+    };
+
+    public void setPosHandler(Consumer<Vector3f> posHandler) {
+        this.posHandler = posHandler;
+    }
+
+    public void setFrontHandler(Consumer<Vector3f> frontHandler) {
+        this.frontHandler = frontHandler;
+    }
 
     public Camera(boolean[] keys) {
         this.keys = keys;
@@ -74,6 +88,7 @@ public class Camera {
                 sinPitch,
                 cosYaw * cosPitch
         ).normalize();
+        frontHandler.accept(front);
 
         up = new Vector3f(front).cross(worldUp).normalize().cross(front).normalize();
         view = null;
@@ -99,26 +114,32 @@ public class Camera {
 
         if (keys[GLFW_KEY_W]) {
             pos.add(new Vector3f(front).mul(speed * deltaTime));
+            posHandler.accept(pos);
             view = null;
         }
         if (keys[GLFW_KEY_S]) {
             pos.add(new Vector3f(front).mul(-speed * deltaTime));
+            posHandler.accept(pos);
             view = null;
         }
         if (keys[GLFW_KEY_A]) {
             pos.add(new Vector3f(front).cross(up).normalize().mul(-speed * deltaTime));
+            posHandler.accept(pos);
             view = null;
         }
         if (keys[GLFW_KEY_D]) {
             pos.add(new Vector3f(front).cross(up).normalize().mul(speed * deltaTime));
+            posHandler.accept(pos);
             view = null;
         }
         if (keys[GLFW_KEY_F]) {
             pos.y += speed * deltaTime;
+            posHandler.accept(pos);
             view = null;
         }
         if (keys[GLFW_KEY_C]) {
             pos.y -= speed * deltaTime;
+            posHandler.accept(pos);
             view = null;
         }
 //        pos.y = 0;

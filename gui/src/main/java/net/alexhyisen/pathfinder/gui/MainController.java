@@ -190,6 +190,8 @@ public class MainController {
     public void handleViewToggleButtonAction() {
         if (viewToggleButton.isSelected()) {
             world = new World();
+            world.setFrontHandler(this::handleCameraFront);
+            world.setPosHandler(this::handleCameraPos);
             wf = es.submit(() -> world.open(false));
         } else {
             world.close();
@@ -201,6 +203,14 @@ public class MainController {
     void shutdown() {
         System.out.println("Diablo");
         es.shutdown();
+    }
+
+    private void handleCameraPos(float[] pos) {
+        System.out.println(String.format("(%f,%f,%f)", pos[0], pos[1], pos[2]));
+    }
+
+    private void handleCameraFront(float[] front) {
+        System.out.println(String.format("[%f,%f,%f]", front[0], front[1], front[2]));
     }
 
     @FXML
