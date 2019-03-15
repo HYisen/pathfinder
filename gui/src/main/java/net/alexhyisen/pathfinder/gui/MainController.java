@@ -1,9 +1,7 @@
 package net.alexhyisen.pathfinder.gui;
 
 import javafx.application.Platform;
-import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
@@ -14,6 +12,7 @@ import javafx.scene.layout.VBox;
 import net.alexhyisen.pathfinder.world.World;
 
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
 public class MainController {
@@ -60,6 +59,9 @@ public class MainController {
     @FXML
     private ToggleButton playToggleButton;
 
+    @SuppressWarnings("unchecked")
+    private Consumer<Double>[] cameraHandler = new Consumer[6];
+
 //    private int count = 0;
 //    private Image image0;
 //    private Image image1;
@@ -103,6 +105,46 @@ public class MainController {
 
     private DummyProgress slamDP = new DummyProgress(1200, "SLAM", ses, this::updateSlamProgress);
     private DummyProgress meshDP = new DummyProgress(1000, "Mesh", ses, this::updateMeshProgress);
+
+    private static Consumer<Double> genParamLine(Pane root, double min, double max, String name) {
+        return genParamLine(root, min, max, name, v -> System.out.println(name + " -> " + v));
+    }
+
+    private static Consumer<Double> genParamLine(Pane root, double min, double max, String name,
+                                                 Consumer<Double> listener) {
+        var label = new Label(name);
+        var slider = new Slider();
+        var spinner = new Spinner<Double>();
+
+        label.setPrefWidth(150);
+        label.setAlignment(Pos.CENTER);
+
+        SimpleObjectProperty<Double> property = new SimpleObjectProperty<>(min);
+        DoubleProperty param = SimpleDoubleProperty.doubleProperty(property);
+        slider.setMin(min);
+        slider.setMax(max);
+        slider.setBlockIncrement(0.1);
+        slider.valueProperty().bindBidirectional(param);
+        slider.valueProperty().addListener(((observable, oldValue, newValue) -> param.setValue(newValue)));
+        slider.setPrefWidth(250);
+
+        spinner.setEditable(true);
+        spinner.setValueFactory(new SpinnerValueFactory.DoubleSpinnerValueFactory(min, max));
+        spinner.getValueFactory().valueProperty().bindBidirectional(property);
+        spinner.valueProperty().addListener((observable, oldValue, newValue) -> param.setValue(newValue));
+        spinner.setPrefWidth(100);
+
+        param.setValue((min + max) / 2.0);
+
+        param.addListener((observable, oldValue, newValue) -> listener.accept((Double) newValue));
+
+        var line = new HBox();
+        line.setSpacing(10);
+        line.getChildren().addAll(label, slider, spinner);
+
+        root.getChildren().add(line);
+        return param::setValue;
+    }
 
     private static Spinner<Integer> genParamLine(Pane root, int min, int max, String name) {
         var label = new Label(name);
@@ -153,13 +195,13 @@ public class MainController {
         modeChoiceBox.setItems(FXCollections.observableArrayList("Points", "Surfaces"));
 
         paramVBox.setSpacing(10);
-        genParamLine(paramVBox, 0, 1000, "Position x");
-        genParamLine(paramVBox, 0, 1000, "Position y");
-        genParamLine(paramVBox, 0, 1000, "Position z");
+        cameraHandler[0] = genParamLine(paramVBox, -10.0, 10.0, "Position x");
+        cameraHandler[1] = genParamLine(paramVBox, -10.0, 10.0, "Position y");
+        cameraHandler[2] = genParamLine(paramVBox, -10.0, 10.0, "Position z");
         paramVBox.getChildren().add(new Separator());
-        genParamLine(paramVBox, 1, 100, "Orientation i");
-        genParamLine(paramVBox, 1, 100, "Orientation j");
-        genParamLine(paramVBox, 1, 100, "Orientation k");
+        cameraHandler[3] = genParamLine(paramVBox, -1.0, 1.0, "Orientation i");
+        cameraHandler[4] = genParamLine(paramVBox, -1.0, 1.0, "Orientation j");
+        cameraHandler[5] = genParamLine(paramVBox, -1.0, 1.0, "Orientation k");
         paramVBox.getChildren().add(new Separator());
         frameSpinner = genParamLine(paramVBox, 0, 1000, "Frame Number");
     }
@@ -207,10 +249,16 @@ public class MainController {
 
     private void handleCameraPos(float[] pos) {
         System.out.println(String.format("(%f,%f,%f)", pos[0], pos[1], pos[2]));
+        cameraHandler[0].accept((double) pos[0]);
+        cameraHandler[1].accept((double) pos[1]);
+        cameraHandler[2].accept((double) pos[2]);
     }
 
     private void handleCameraFront(float[] front) {
         System.out.println(String.format("[%f,%f,%f]", front[0], front[1], front[2]));
+        cameraHandler[3].accept((double) front[0]);
+        cameraHandler[4].accept((double) front[1]);
+        cameraHandler[5].accept((double) front[2]);
     }
 
     @FXML
