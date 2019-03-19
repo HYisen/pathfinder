@@ -22,6 +22,8 @@ import static org.lwjgl.opengl.GL30.glBindVertexArray;
 public class World {
     private Map<String, Binder> binders = new HashMap<>();
 
+    private Loader loader;
+
     private boolean[] keys = new boolean[1024];
     private Camera camera = new Camera(keys);
 
@@ -32,8 +34,18 @@ public class World {
             .limit(4)
             .toArray(FloatBuffer[]::new);
 
+    public World(Loader loader) {
+        this.loader = loader;
+    }
+
     public static void main(String[] args) {
-        var world = new World();
+        var loader = new Loader();
+        try {
+            loader.load();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        var world = new World(loader);
         world.open(true);
     }
 
@@ -164,33 +176,6 @@ public class World {
 
         var program = genProgram("one", "two");
 
-        var loader = new Loader();
-        try {
-            loader.load();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        final List<double[]> ptrs = loader.getVertexes();
-        float[] vertices = new float[ptrs.size() * 6];
-        final float metric = 50.0f;
-        final var rand = new Random();
-        for (int k = 0; k < ptrs.size(); k++) {
-            vertices[6 * k] = (float) ptrs.get(k)[0] / metric;
-            vertices[6 * k + 1] = (float) ptrs.get(k)[1] / metric;
-            vertices[6 * k + 2] = (float) ptrs.get(k)[2] / metric;
-            vertices[6 * k + 3] = rand.nextFloat();
-            vertices[6 * k + 4] = rand.nextFloat();
-            vertices[6 * k + 5] = rand.nextFloat();
-        }
-
-        binders.put("items", new Binder()
-                .setVertices(vertices)
-                .setIndices(loader.getShapes().stream().flatMapToInt(Arrays::stream).toArray())
-                .init(GL_STATIC_DRAW)
-                .setProgram(program)
-        );
-
-
         binders.put("one", new Binder()
                 .setVertices(
                         -0.8f, 0, 0.0f, 1.0f, 0.0f, 0.0f,
@@ -251,7 +236,36 @@ public class World {
 
         int timestamp = (int) glfwGetTime();
         int count = 0;
+
+        glEnable(GL_DEPTH_TEST);
+
         while (!glfwWindowShouldClose(window)) {
+            if (loader.hasChanged()) {
+                System.out.println("reload because matrix has changed");
+
+                final List<double[]> ptrs = loader.getVertexes();
+                float[] vertices = new float[ptrs.size() * 6];
+                final float metric = 50.0f;
+                final var rand = new Random(17);
+                for (int k = 0; k < ptrs.size(); k++) {
+                    vertices[6 * k] = (float) ptrs.get(k)[0] / metric;
+                    vertices[6 * k + 1] = (float) ptrs.get(k)[1] / metric;
+                    vertices[6 * k + 2] = (float) ptrs.get(k)[2] / metric;
+                    vertices[6 * k + 3] = rand.nextFloat();
+                    vertices[6 * k + 4] = rand.nextFloat();
+                    vertices[6 * k + 5] = rand.nextFloat();
+                }
+
+                binders.put("items", new Binder()
+                        .setVertices(vertices)
+                        .setIndices(loader.getShapes().stream().flatMapToInt(Arrays::stream).toArray())
+                        .init(GL_STATIC_DRAW)
+                        .setProgram(program)
+                );
+
+                loader.setChanged();
+            }
+
             glfwPollEvents();
 
             int current = (int) glfwGetTime();

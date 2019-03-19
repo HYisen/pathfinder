@@ -1,19 +1,27 @@
 package net.alexhyisen.pathfinder.gui;
 
-import javafx.application.Platform;
 import javafx.beans.property.*;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import net.alexhyisen.pathfinder.utility.DummyTask;
+import net.alexhyisen.pathfinder.utility.Loader;
+import net.alexhyisen.pathfinder.utility.QuadFunction;
 import net.alexhyisen.pathfinder.world.World;
 
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.*;
-import java.util.function.IntConsumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 public class MainController {
 //    @FXML
@@ -33,22 +41,28 @@ public class MainController {
     private ChoiceBox<String> modeChoiceBox;
 
     @FXML
-    private Label slamProgressLabel;
+    private TextField execPathTextField;
 
     @FXML
-    private ProgressBar slamProgressBar;
+    private Label execProgressLabel;
 
     @FXML
-    private ToggleButton slamToggleButton;
+    private ProgressBar execProgressBar;
 
     @FXML
-    private Label meshProgressLabel;
+    private ToggleButton execToggleButton;
 
     @FXML
-    private ProgressBar meshProgressBar;
+    private TextField loadPathTextField;
 
     @FXML
-    private ToggleButton meshToggleButton;
+    private Label loadProgressLabel;
+
+    @FXML
+    private ProgressBar loadProgressBar;
+
+    @FXML
+    private ToggleButton loadToggleButton;
 
     @FXML
     private VBox paramVBox;
@@ -58,6 +72,12 @@ public class MainController {
 
     @FXML
     private ToggleButton playToggleButton;
+
+    @FXML
+    private GridPane matrixGrid;
+
+    @SuppressWarnings("unchecked")
+    private Supplier<Double>[] matrixValueGetter = (Supplier<Double>[]) new Supplier[9];
 
 //    private int count = 0;
 //    private Image image0;
@@ -70,11 +90,12 @@ public class MainController {
     private DoubleProperty[] localCameraInfo = new DoubleProperty[6];
 
     private World world;
+    private Loader loader;
 
     private ExecutorService es = Executors.newCachedThreadPool();
     private Future wf;
 
-    private Spinner<Integer> frameSpinner;
+    private IntegerProperty frameProperty;
 
 //    @FXML
 //    protected void onButtonAction() {
@@ -103,35 +124,46 @@ public class MainController {
 //        imageView1.setImage(image1);
 //    }
 
-    private DummyProgress slamDP = new DummyProgress(1200, "SLAM", ses, this::updateSlamProgress);
-    private DummyProgress meshDP = new DummyProgress(1000, "Mesh", ses, this::updateMeshProgress);
+    //I wish I have the real generic which enable partial template specialization, just like that in cpp.
+    private static DoubleProperty manageDoubleParamLine(String name, Pane root, double range) {
+        return manageParamLine(name, root, -range, range, 0.0, 0.01, 0.01,
+                SimpleObjectProperty::new,
+                SimpleDoubleProperty::doubleProperty,
+                SpinnerValueFactory.DoubleSpinnerValueFactory::new);
+    }
 
-    private static DoubleProperty genParamLine(Pane root, double min, double max, String name) {
+    //The DRY principle survived. But was it worth it? To extract the boilerplate code, I do harm to its readability.
+    private static <ValueType extends Number, PropertyType extends Property<Number>> PropertyType manageParamLine(
+            String name, Pane root, ValueType min, ValueType max, ValueType initValue,
+            double sliderIncrement, ValueType spinnerStep,
+            Function<ValueType, SimpleObjectProperty<ValueType>> propertyProvider,
+            Function<SimpleObjectProperty<ValueType>, PropertyType> paramProvider,
+            QuadFunction<ValueType, ValueType, ValueType, ValueType, SpinnerValueFactory<ValueType>> svfProvider
+    ) {
         var label = new Label(name);
         var slider = new Slider();
-        var spinner = new Spinner<Double>();
 
         label.setPrefWidth(150);
         label.setAlignment(Pos.CENTER);
 
-        SimpleObjectProperty<Double> property = new SimpleObjectProperty<>(min);
-        DoubleProperty param = SimpleDoubleProperty.doubleProperty(property);
-        slider.setMin(min);
-        slider.setMax(max);
-        slider.setBlockIncrement(0.01);
+        var property = propertyProvider.apply(initValue);
+        var param = paramProvider.apply(property);
+        slider.setMin(min.doubleValue());
+        slider.setMax(max.doubleValue());
+        slider.setBlockIncrement(sliderIncrement);
         slider.valueProperty().bindBidirectional(param);
         slider.valueProperty().addListener(((observable, oldValue, newValue) -> param.setValue(newValue)));
         slider.setPrefWidth(250);
 
-        spinner.setEditable(true);
-        final var spinnerValueFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(min, max);
-        spinnerValueFactory.setAmountToStepBy(0.01);
-        spinner.setValueFactory(spinnerValueFactory);
+        var spinnerValueFactory = svfProvider.apply(min, max, initValue, spinnerStep);
+        var spinner = genSpinner(
+                spinnerValueFactory,
+                (observable, oldValue, newValue) -> param.setValue(newValue)
+        );
         spinner.getValueFactory().valueProperty().bindBidirectional(property);
-        spinner.valueProperty().addListener((observable, oldValue, newValue) -> param.setValue(newValue));
         spinner.setPrefWidth(100);
 
-        param.setValue((min + max) / 2.0);
+        param.setValue(initValue);
 
         var line = new HBox();
         line.setSpacing(10);
@@ -141,42 +173,12 @@ public class MainController {
         return param;
     }
 
-    private static Spinner<Integer> genParamLine(Pane root, int min, int max, String name) {
-        var label = new Label(name);
-        var slider = new Slider();
-        var spinner = new Spinner<Integer>();
-
-        label.setPrefWidth(150);
-        label.setAlignment(Pos.CENTER);
-
-        SimpleObjectProperty<Integer> property = new SimpleObjectProperty<>(min);
-        IntegerProperty param = SimpleIntegerProperty.integerProperty(property);
-        slider.setMin(min);
-        slider.setMax(max);
-        slider.setBlockIncrement(1);
-        slider.valueProperty().bindBidirectional(param);
-        slider.valueProperty().addListener(((observable, oldValue, newValue) -> param.setValue(newValue)));
-        slider.setPrefWidth(250);
-
+    private static <T> Spinner<T> genSpinner(SpinnerValueFactory<T> spinnerValueFactory, ChangeListener<T> listener) {
+        var spinner = new Spinner<T>();
         spinner.setEditable(true);
-        spinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(min, max));
-        spinner.getValueFactory().valueProperty().bindBidirectional(property);
-        spinner.valueProperty().addListener((observable, oldValue, newValue) -> param.setValue(newValue));
-        spinner.setPrefWidth(100);
-
-        param.setValue(min);
-
-        var line = new HBox();
-        line.setSpacing(10);
-        line.getChildren().addAll(label, slider, spinner);
-
-        root.getChildren().add(line);
+        spinner.setValueFactory(spinnerValueFactory);
+        spinner.valueProperty().addListener(listener);
         return spinner;
-    }
-
-    private static void updateProgress(int current, int total, Label label, ProgressBar progressBar) {
-        label.setText(String.format("%5d/%5d", current, total));
-        progressBar.setProgress((double) current / total);
     }
 
     @FXML
@@ -190,30 +192,66 @@ public class MainController {
         modeChoiceBox.setItems(FXCollections.observableArrayList("Points", "Surfaces"));
 
         paramVBox.setSpacing(10);
-        localCameraInfo[0] = genParamLine(paramVBox, -10.0, 10.0, "Position x");
-        localCameraInfo[1] = genParamLine(paramVBox, -10.0, 10.0, "Position y");
-        localCameraInfo[2] = genParamLine(paramVBox, -10.0, 10.0, "Position z");
+        localCameraInfo[0] = manageDoubleParamLine("Position x", paramVBox, 10.0);
+        localCameraInfo[1] = manageDoubleParamLine("Position y", paramVBox, 10.0);
+        localCameraInfo[2] = manageDoubleParamLine("Position z", paramVBox, 10.0);
         paramVBox.getChildren().add(new Separator());
-        localCameraInfo[3] = genParamLine(paramVBox, -1.0, 1.0, "Orientation i");
-        localCameraInfo[4] = genParamLine(paramVBox, -1.0, 1.0, "Orientation j");
-        localCameraInfo[5] = genParamLine(paramVBox, -1.0, 1.0, "Orientation k");
+        localCameraInfo[3] = manageDoubleParamLine("Orientation i", paramVBox, 1.0);
+        localCameraInfo[4] = manageDoubleParamLine("Orientation j", paramVBox, 1.0);
+        localCameraInfo[5] = manageDoubleParamLine("Orientation k", paramVBox, 1.0);
         paramVBox.getChildren().add(new Separator());
-        frameSpinner = genParamLine(paramVBox, 0, 1000, "Frame Number");
+        frameProperty = manageParamLine("Frame Number", paramVBox,
+                0, 1000, 0, 1.0, 1,
+                SimpleObjectProperty::new,
+                SimpleIntegerProperty::integerProperty,
+                SpinnerValueFactory.IntegerSpinnerValueFactory::new);
+
+
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                //I would take the cost of more memory consumption much rather than naming space pollution,
+                //moreover, hopefully the compiler would optimize it, therefore I don't declare them final.
+                var initValue = (i == j ? 1 : 0);
+                var spinner = genSpinner(
+                        new SpinnerValueFactory.DoubleSpinnerValueFactory(
+                                -10, 10, initValue, 0.2),
+                        (observable, oldValue, newValue) -> updateMatrix()
+                );
+                spinner.setPrefWidth(80);
+                matrixGrid.add(spinner, j + 1, i + 1);
+                matrixValueGetter[i * 3 + j] = spinner::getValue;
+            }
+        }
+
+        loader = new Loader();
+
+        loadPathTextField.setText("manifold_final.off");
+
+        //It's it better to use a closure rather than the constructor only class?
+        new ProgressManager(execProgressLabel, execProgressBar, execToggleButton, ses, es, 600, new DummyTask());
+        new ProgressManager(loadProgressLabel, loadProgressBar, loadToggleButton, ses, es, 120,
+                () -> {
+                    String text = loadPathTextField.getText();
+                    System.out.println("load path = " + text);
+                    try {
+                        loader.load(Paths.get(text));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        return true;
+                    }
+                    return false;
+                });
     }
 
-    private void updateSlamProgress(int current) {
-        updateProgress(current, 1200, slamProgressLabel, slamProgressBar);
-    }
-
-    private void updateMeshProgress(int current) {
-        updateProgress(current, 1000, meshProgressLabel, meshProgressBar);
+    private void updateMatrix() {
+        loader.setMatrix(IntStream.range(0, 9).mapToDouble(v -> matrixValueGetter[v].get()).toArray());
     }
 
     @FXML
     public void handlePlayToggleButtonAction() {
         if (playToggleButton.isSelected()) {
             sf = ses.scheduleAtFixedRate(
-                    () -> frameSpinner.getValueFactory().increment(1),
+                    () -> frameProperty.add(1),
                     100,
                     100,
                     TimeUnit.MILLISECONDS
@@ -226,7 +264,8 @@ public class MainController {
     @FXML
     public void handleViewToggleButtonAction() {
         if (viewToggleButton.isSelected()) {
-            world = new World();
+            world = new World(loader);
+            updateMatrix();
             wf = es.submit(() -> world.open(false));
             if (sf != null && !sf.isDone()) {
                 sf.cancel(false);
@@ -243,6 +282,7 @@ public class MainController {
     void shutdown() {
         System.out.println("Diablo");
         es.shutdown();
+        ses.shutdown();
     }
 
     private static boolean unequal(DoubleProperty[] lhs, float[] rhs) {
@@ -277,47 +317,6 @@ public class MainController {
                 localCameraInfo[i].set((double) data[i]);
             }
             System.out.println("get " + Arrays.toString(data));
-        }
-    }
-
-    @FXML
-    public void handleSlamToggleButtonAction() {
-        slamDP.action(slamToggleButton.isSelected());
-    }
-
-    @FXML
-    public void handleMeshToggleButtonAction() {
-        meshDP.action(meshToggleButton.isSelected());
-    }
-
-    private class DummyProgress {
-        private int num = 0;
-        private int max;
-        private String name;
-        private ScheduledExecutorService ses;
-        private ScheduledFuture sf;
-        private IntConsumer handler;
-
-        DummyProgress(int max, String name, ScheduledExecutorService ses, IntConsumer handler) {
-            this.max = max;
-            this.name = name;
-            this.ses = ses;
-            this.handler = handler;
-        }
-
-        void action(boolean isSelected) {
-            if (isSelected) {
-                System.out.println(name + " play");
-                sf = ses.scheduleAtFixedRate(() -> {
-                    if (++num <= max) {
-                        Platform.runLater(() -> handler.accept(num));
-                        System.out.println(name + num);
-                    }
-                }, 100, 100, TimeUnit.MILLISECONDS);
-            } else {
-                System.out.println(name + " stop");
-                sf.cancel(false);
-            }
         }
     }
 }

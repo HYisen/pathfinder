@@ -6,14 +6,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Loader {
     private static float INF_VALUE = 1000;
+    private List<double[]> rawVertexes;
     private List<double[]> vertexes;
     private List<int[]> shapes;
+
+    private boolean changed = false;
 
     public static void main(String[] args) throws IOException {
         var one = new Loader();
@@ -34,18 +36,11 @@ public class Loader {
     }
 
     public void load(Path path) throws IOException {
-        final Map<Integer, List<String[]>> collect = Files
-                .lines(path)
-                .sequential()//parallel will cause disorder in id
-                .skip(2)
-                .map(v -> v.split(" "))
-                .collect(Collectors.groupingBy(v -> v.length));
-
         final List<String> lines = Files.readAllLines(path);
         final var info = lines.get(1).split(" ");
         final int ptrsSize = Integer.valueOf(info[0]);
         final int shpsSize = Integer.valueOf(info[1]);
-        vertexes = IntStream
+        rawVertexes = IntStream
                 .range(2, 2 + ptrsSize)
                 .mapToObj(lines::get)
 //                .peek(System.out::println)
@@ -69,10 +64,33 @@ public class Loader {
                         .mapToInt(Integer::valueOf)
                         .toArray())
                 .collect(Collectors.toList());
+        setMatrix(new double[]{1, 0, 0, 0, 1, 0, 0, 0, 1});
+    }
+
+    public void setMatrix(double[] matrix) {
+        vertexes = rawVertexes
+                .stream()
+                .map(v -> new double[]{
+                        //I'v known that y(height) in input is inverted.
+                        v[0] * matrix[0] - v[1] * matrix[1] + v[2] * matrix[2],
+                        v[0] * matrix[3] - v[1] * matrix[4] + v[2] * matrix[5],
+                        v[0] * matrix[6] - v[1] * matrix[7] + v[2] * matrix[8],
+                })//I know that there is a better O(n^lg10) rather than O(lg^3) cross mul.
+                .collect(Collectors.toList());
+        changed = true;
+        System.out.println("set matrix to " + Arrays.toString(matrix));
     }
 
     public void load() throws IOException {
         load(Paths.get(".", "manifold_final.off"));
+    }
+
+    public boolean hasChanged() {
+        return changed;
+    }
+
+    public void setChanged() {
+        this.changed = false;
     }
 
     public List<double[]> getVertexes() {
