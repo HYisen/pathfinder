@@ -13,6 +13,7 @@ import javafx.scene.layout.VBox;
 import net.alexhyisen.pathfinder.utility.DummyTask;
 import net.alexhyisen.pathfinder.utility.Loader;
 import net.alexhyisen.pathfinder.utility.QuadFunction;
+import net.alexhyisen.pathfinder.world.Mode;
 import net.alexhyisen.pathfinder.world.World;
 
 import java.io.IOException;
@@ -38,8 +39,9 @@ public class MainController {
 //    private ToggleButton toggleButton;
 
     @FXML
-    private ChoiceBox<String> modeChoiceBox;
+    private ChoiceBox<Mode> modeChoiceBox;
 
+    @SuppressWarnings("unused")
     @FXML
     private TextField execPathTextField;
 
@@ -189,7 +191,14 @@ public class MainController {
 //        slider.valueProperty().addListener(v -> showImage((int) slider.getValue()));
 //        slider.setValue(0);
 
-        modeChoiceBox.setItems(FXCollections.observableArrayList("Points", "Surfaces"));
+        modeChoiceBox.setItems(FXCollections.observableArrayList(Mode.UNI, Mode.TRI));
+        modeChoiceBox.getSelectionModel().selectedItemProperty().addListener(
+                (observable, oldValue, newValue) -> {
+                    if (world != null) {
+                        world.setItemMode(newValue);
+                    }
+                });
+        modeChoiceBox.setValue(Mode.UNI);
 
         paramVBox.setSpacing(10);
         localCameraInfo[0] = manageDoubleParamLine("Position x", paramVBox, 10.0);
@@ -265,6 +274,7 @@ public class MainController {
     public void handleViewToggleButtonAction() {
         if (viewToggleButton.isSelected()) {
             world = new World(loader);
+            world.setItemMode(modeChoiceBox.getValue());
             updateMatrix();
             wf = es.submit(() -> world.open(false));
             if (sf != null && !sf.isDone()) {

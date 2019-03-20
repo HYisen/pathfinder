@@ -89,8 +89,8 @@ public class Loader {
         return changed;
     }
 
-    public void setChanged() {
-        this.changed = false;
+    public void setChanged(boolean changed) {
+        this.changed = changed;
     }
 
     public List<double[]> getVertexes() {
@@ -99,5 +99,12 @@ public class Loader {
 
     public List<int[]> getShapes() {
         return shapes;
+    }
+
+    public List<double[][]> getTriangles() {
+        return shapes
+                .stream()
+                .map(v -> new double[][]{vertexes.get(v[0]), vertexes.get(v[1]), vertexes.get(v[2])})
+                .collect(Collectors.toList());
     }
 }
