@@ -6,12 +6,8 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.FloatBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.lwjgl.glfw.GLFW.*;
@@ -55,45 +51,6 @@ public class World {
 
     public void setCameraInfo(float[] data) {
         camera.setData(data);
-    }
-
-    private static String loadShaderCode(String name) {
-        var loader = Thread.currentThread().getContextClassLoader();
-        try {
-            var url = Objects.requireNonNull(loader.getResource("shader/" + name + ".glsl"));
-            return Files
-                    .lines(Path.of(url.toURI()))
-                    .collect(Collectors.joining("\n"));
-        } catch (URISyntaxException | IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static int loadShader(String name, int type) {
-        var shader = glCreateShader(type);
-        glShaderSource(shader, loadShaderCode(name));
-        glCompileShader(shader);
-        if (glGetShaderi(shader, GL_COMPILE_STATUS) == 0) {
-            throw new RuntimeException(glGetShaderInfoLog(shader));
-        }
-        return shader;
-    }
-
-    private static int genProgram(String vertexShaderName, String fragmentShaderName) {
-        var vertexShader = loadShader(vertexShaderName, GL_VERTEX_SHADER);
-        var fragmentShader = loadShader(fragmentShaderName, GL_FRAGMENT_SHADER);
-
-        var program = glCreateProgram();
-
-        glAttachShader(program, vertexShader);
-        glAttachShader(program, fragmentShader);
-
-        glLinkProgram(program);
-        if (glGetProgrami(program, GL_LINK_STATUS) == 0) {
-            throw new RuntimeException(glGetProgramInfoLog(program));
-        }
-
-        return program;
     }
 
     private void draw(String name, Matrix4f model, Matrix4f transform) {
@@ -174,7 +131,7 @@ public class World {
 
         GL.createCapabilities();
 
-        var program = genProgram("one", "two");
+        var program = new ProgramBuilder().addVertexShader("one").addFragmentShader("two").build();
 
         binders.put("one", new Binder()
                 .setVertices(
