@@ -31,7 +31,6 @@ public class World {
     private TriBinder triBinder;
 
     private float metric = 50.0f;
-    private Random rand = new Random(17);
 
     private FloatBuffer[] fb = Stream
             .generate(() -> BufferUtils.createFloatBuffer(16))
@@ -321,6 +320,8 @@ public class World {
     }
 
     private void updateTriBinder(int program) {
+        var rand = new Random(17);
+
         //Can use Stream to map, but I care about single thread performance.
         List<double[][]> triangles = loader.getTriangles();
         float[] data = new float[triangles.size() * 12];
@@ -338,6 +339,8 @@ public class World {
     }
 
     private void updateUniBinder(int program) {
+        var rand = new Random(17);
+
         final List<double[]> ptrs = loader.getVertexes();
         float[] vertices = new float[ptrs.size() * 6];
         for (int k = 0; k < ptrs.size(); k++) {
