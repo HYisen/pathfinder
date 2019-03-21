@@ -191,7 +191,7 @@ public class MainController {
 //        slider.valueProperty().addListener(v -> showImage((int) slider.getValue()));
 //        slider.setValue(0);
 
-        modeChoiceBox.setItems(FXCollections.observableArrayList(Mode.UNI, Mode.TRI));
+        modeChoiceBox.setItems(FXCollections.observableArrayList(Mode.values()));
         modeChoiceBox.getSelectionModel().selectedItemProperty().addListener(
                 (observable, oldValue, newValue) -> {
                     if (world != null) {

@@ -90,9 +90,13 @@ public class World {
     }
 
     private void draw(UniBinder binder, Matrix4f model, Matrix4f transform) {
+        draw(binder, model, transform, GL_TRIANGLES);
+    }
+
+    private void draw(UniBinder binder, Matrix4f model, Matrix4f transform, int mode) {
         drawTemplate(binder.getProgram(), binder.getVao(), model, transform, camera, fb);
 
-        glDrawElements(GL_TRIANGLES, binder.getCount(), GL_UNSIGNED_INT, 0);
+        glDrawElements(mode, binder.getCount(), GL_UNSIGNED_INT, 0);
 
         glBindVertexArray(0);
     }
@@ -259,6 +263,7 @@ public class World {
 
                 switch (itemMode) {
                     case UNI:
+                    case PTR:
                         updateUniBinder(program);
                         break;
                     case TRI:
@@ -300,6 +305,9 @@ public class World {
                     break;
                 case TRI:
                     draw(triBinder, model, eye);
+                    break;
+                case PTR:
+                    draw(uniBinder, model, eye, GL_POINTS);
                     break;
             }
 

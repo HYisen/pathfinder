@@ -3,6 +3,7 @@ package net.alexhyisen.pathfinder.world;
 public enum Mode {
     UNI("uni_model"),
     TRI("triangles"),
+    PTR("vertexes"),
     ;
 
     private String desc;
