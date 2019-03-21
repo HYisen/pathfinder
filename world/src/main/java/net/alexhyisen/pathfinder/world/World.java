@@ -175,11 +175,11 @@ public class World {
 
         binders.put("one", new UniBinder()
                 .setVertices(
-                        -0.8f, 0, 0.0f, 1.0f, 0.0f, 0.0f,
-                        0, 0.8f, 0.0f, 0.0f, 1.0f, 0.0f,
-                        0.8f, 0, 0.0f, 0.0f, 0.0f, 1.0f,
-                        0, -0.8f, 0.0f, 0.0f, 0.0f, 0.0f,
-                        0, 0, 0.2f, 1f, 1f, 1f
+                        -0.8f, 0, 0.1f, 1.0f, 0.0f, 0.0f,
+                        0, 0.8f, 0.1f, 0.0f, 1.0f, 0.0f,
+                        0.8f, 0, 0.1f, 0.0f, 0.0f, 1.0f,
+                        0, -0.8f, 0.1f, 0.0f, 0.0f, 0.0f,
+                        0, 0, 0.8f, 1f, 1f, 1f
                 )
                 .setIndices(
                         0, 1, 4,
@@ -230,6 +230,7 @@ public class World {
 
 //        var model = new Matrix4f().rotate((float) Math.toRadians(-55.0), 1, 0, 0);
         var model = new Matrix4f();
+        var stubModel = new Matrix4f().setTranslation(0, 4, 0);
 
         int timestamp = (int) glfwGetTime();
         int count = 0;
@@ -291,13 +292,13 @@ public class World {
 //            glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            draw("one", model, new Matrix4f()
+            draw("one", stubModel, new Matrix4f()
                     .rotate((float) (grey * Math.PI), 0, 0, 1)
                     .translate(0.2f, 0, 0)
             );
 
-            draw("land", model, eye);
-            draw("sky", model, eye);
+            draw("land", stubModel, eye);
+            draw("sky", stubModel, eye);
 
             switch (itemMode) {
                 case UNI:
