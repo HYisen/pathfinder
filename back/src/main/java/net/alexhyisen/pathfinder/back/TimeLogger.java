@@ -1,4 +1,4 @@
-package net.alexhyisen.pathfinder.utility;
+package net.alexhyisen.pathfinder.back;
 
 import java.io.IOException;
 import java.nio.file.Files;

@@ -41,10 +41,12 @@ class ProgramBuilder {
         return addShader(name, GL_VERTEX_SHADER);
     }
 
+    @SuppressWarnings("SameParameterValue")
     ProgramBuilder addFragmentShader(String name) {
         return addShader(name, GL_FRAGMENT_SHADER);
     }
 
+    @SuppressWarnings("SameParameterValue")
     ProgramBuilder addGeometryShader(String name) {
         return addShader(name, GL_GEOMETRY_SHADER);
     }

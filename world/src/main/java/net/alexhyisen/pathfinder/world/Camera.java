@@ -3,30 +3,33 @@ package net.alexhyisen.pathfinder.world;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
-import java.util.function.Consumer;
-
 import static org.lwjgl.glfw.GLFW.*;
 
 public class Camera {
     private Vector3f pos = new Vector3f(0, 0, 3);
     private Vector3f front = new Vector3f(0, 0, -1);
     private Vector3f up = new Vector3f(0, 1, 0);
-    private final float MAX_ZOOM = 120.0f;
+    @SuppressWarnings("FieldCanBeLocal")
+    private float MAX_ZOOM = 120.0f;
 
     private Matrix4f view = null;
     private Matrix4f projection = null;
 
+    @SuppressWarnings("FieldCanBeLocal")
     private float speed = 1.0f;
+    @SuppressWarnings("FieldCanBeLocal")
     private float deltaTime = 0.0f;
     private float lastFrame = 0.0f;
     private boolean[] keys;
     private float lastX = 500.0f;
     private float lastY = 500.0f;
     private Vector3f worldUp = new Vector3f(0, 1, 0);
+    @SuppressWarnings("FieldCanBeLocal")
     private float sensitivity = 0.05f;
     private float yaw = -90.0f;
     private float pitch = 0.0f;
     private float zoom = 45.0f;
+    @SuppressWarnings("FieldCanBeLocal")
     private float sensitivity0 = 100f;
     private boolean firstMove = true;
 
@@ -34,6 +37,7 @@ public class Camera {
         this.keys = keys;
     }
 
+    @SuppressWarnings("unused")
     void handleCursor(long window, double xpos, double ypos) {
         if (firstMove) {
             firstMove = false;
@@ -80,6 +84,7 @@ public class Camera {
         view = null;
     }
 
+    @SuppressWarnings("unused")
     void handleScroll(long window, double xoffset, double yoffset) {
         if (zoom >= 1.0f && zoom <= MAX_ZOOM) {
             zoom -= yoffset;
@@ -151,8 +156,8 @@ public class Camera {
     }
 
     void setData(float[] orig) {
-        pos=new Vector3f(orig[0],orig[1],orig[2]);
-        front=new Vector3f(orig[3],orig[4],orig[5]);
+        pos = new Vector3f(orig[0], orig[1], orig[2]);
+        front = new Vector3f(orig[3], orig[4], orig[5]);
         view = null;
     }
 

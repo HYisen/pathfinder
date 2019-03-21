@@ -24,8 +24,8 @@ class ProgressManager {
 
     private Callable<Boolean> task;
 
-    public ProgressManager(Label label, ProgressBar progressBar, ToggleButton toggleButton,
-                           ScheduledExecutorService ses, ExecutorService es, int max, Callable<Boolean> task) {
+    ProgressManager(Label label, ProgressBar progressBar, ToggleButton toggleButton,
+                    ScheduledExecutorService ses, ExecutorService es, int max, Callable<Boolean> task) {
         this.label = label;
         this.progressBar = progressBar;
         this.toggleButton = toggleButton;

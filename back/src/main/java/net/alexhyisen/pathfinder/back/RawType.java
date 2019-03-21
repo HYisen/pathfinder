@@ -1,4 +1,4 @@
-package net.alexhyisen.pathfinder.utility;
+package net.alexhyisen.pathfinder.back;
 
 public enum RawType {
     ACCE,

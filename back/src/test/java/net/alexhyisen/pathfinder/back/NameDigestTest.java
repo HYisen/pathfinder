@@ -1,4 +1,4 @@
-package net.alexhyisen.pathfinder.utility;
+package net.alexhyisen.pathfinder.back;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

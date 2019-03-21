@@ -40,6 +40,7 @@
         <module>utility</module>
         <module>gui</module>
         <module>world</module>
+        <module>back</module>
     </modules>
 
 

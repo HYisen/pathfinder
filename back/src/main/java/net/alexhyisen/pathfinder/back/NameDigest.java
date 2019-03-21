@@ -1,4 +1,4 @@
-package net.alexhyisen.pathfinder.utility;
+package net.alexhyisen.pathfinder.back;
 
 import java.util.Arrays;
 import java.util.Optional;
