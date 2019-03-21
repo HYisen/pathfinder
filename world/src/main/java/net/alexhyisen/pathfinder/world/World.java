@@ -8,6 +8,8 @@ import org.lwjgl.opengl.GL;
 import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.util.*;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
 
 import static org.lwjgl.glfw.GLFW.*;
@@ -25,6 +27,7 @@ public class World {
 
     private long window = -1;
 
+    private ReadWriteLock lock = new ReentrantReadWriteLock();
     private Mode itemMode = Mode.UNI;
     private boolean changeMode = true;
     private UniBinder uniBinder;
@@ -76,8 +79,13 @@ public class World {
     }
 
     public void setItemMode(Mode itemMode) {
+        lock.writeLock().lock();
+
+        //checked noexcept procedure
         this.itemMode = itemMode;
         changeMode = true;
+
+        lock.writeLock().unlock();
     }
 
     private void draw(TriBinder binder, Matrix4f model, Matrix4f transform) {
@@ -237,81 +245,86 @@ public class World {
         glEnable(GL_DEPTH_TEST);
 
         while (!glfwWindowShouldClose(window)) {
-            glfwPollEvents();
+            lock.readLock().lock();
+            try {
+                glfwPollEvents();
 
-            if (changeMode) {
-                System.out.println("change itemMode to " + itemMode);
+                if (changeMode) {
+                    System.out.println("change itemMode to " + itemMode);
 
-                //Use explicit delete to save VRAM.
-                if (uniBinder != null) {
-                    uniBinder.delete();
-                    uniBinder = null;
+                    //Use explicit delete to save VRAM.
+                    if (uniBinder != null) {
+                        uniBinder.delete();
+                        uniBinder = null;
+                    }
+                    if (triBinder != null) {
+                        triBinder.delete();
+                        triBinder = null;
+                    }
+
+                    //hack to force binder update
+                    loader.setChanged(true);
+
+                    changeMode = false;
                 }
-                if (triBinder != null) {
-                    triBinder.delete();
-                    triBinder = null;
+
+                if (loader.hasChanged()) {
+                    System.out.println("reload because loader has changed");
+
+                    switch (itemMode) {
+                        case UNI:
+                        case PTR:
+                            updateUniBinder(program);
+                            break;
+                        case TRI:
+                            updateTriBinder(geoProgram);
+                            break;
+                    }
+
+                    loader.setChanged(false);
                 }
 
-                //hack to force binder update
-                loader.setChanged(true);
+                //manage title
+                int current = (int) glfwGetTime();
+                if (current != timestamp) {
+                    timestamp = current;
+                    glfwSetWindowTitle(window, String.format("%dFPS @ %d sec", count, current));
+                    count = 0;
+                    System.out.println(timestamp);
+                } else {
+                    count++;
+                }
 
-                changeMode = false;
-            }
+                //manage background
+                float grey = oscillator.next();
+                glClearColor(grey, grey, grey, 1.0f);
+//            glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            if (loader.hasChanged()) {
-                System.out.println("reload because loader has changed");
+                draw("one", stubModel, new Matrix4f()
+                        .rotate((float) (grey * Math.PI), 0, 0, 1)
+                        .translate(0.2f, 0, 0)
+                );
+
+                draw("land", stubModel, eye);
+                draw("sky", stubModel, eye);
 
                 switch (itemMode) {
                     case UNI:
-                    case PTR:
-                        updateUniBinder(program);
+                        draw(uniBinder, model, eye);
                         break;
                     case TRI:
-                        updateTriBinder(geoProgram);
+                        draw(triBinder, model, eye);
+                        break;
+                    case PTR:
+                        draw(uniBinder, model, eye, GL_POINTS);
                         break;
                 }
 
-                loader.setChanged(false);
+                glfwSwapBuffers(window);
+            } finally {
+                lock.readLock().unlock();
             }
-
-            //manage title
-            int current = (int) glfwGetTime();
-            if (current != timestamp) {
-                timestamp = current;
-                glfwSetWindowTitle(window, String.format("%dFPS @ %d sec", count, current));
-                count = 0;
-                System.out.println(timestamp);
-            } else {
-                count++;
-            }
-
-            //manage background
-            float grey = oscillator.next();
-            glClearColor(grey, grey, grey, 1.0f);
-//            glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-            draw("one", stubModel, new Matrix4f()
-                    .rotate((float) (grey * Math.PI), 0, 0, 1)
-                    .translate(0.2f, 0, 0)
-            );
-
-            draw("land", stubModel, eye);
-            draw("sky", stubModel, eye);
-
-            switch (itemMode) {
-                case UNI:
-                    draw(uniBinder, model, eye);
-                    break;
-                case TRI:
-                    draw(triBinder, model, eye);
-                    break;
-                case PTR:
-                    draw(uniBinder, model, eye, GL_POINTS);
-                    break;
-            }
-
-            glfwSwapBuffers(window);
         }
 
         System.out.println(glGetInteger(GL_MAX_VERTEX_ATTRIBS));
