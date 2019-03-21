@@ -1,11 +1,6 @@
 package net.alexhyisen.pathfinder.world;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL32.GL_GEOMETRY_SHADER;
@@ -17,14 +12,11 @@ class ProgramBuilder {
         this.program = glCreateProgram();
     }
 
-    private static String loadShaderCode(String name) {
-        var loader = Thread.currentThread().getContextClassLoader();
+    private String loadShaderCode(String name) {
         try {
-            var url = Objects.requireNonNull(loader.getResource("shader/" + name + ".glsl"));
-            return Files
-                    .lines(Path.of(url.toURI()))
-                    .collect(Collectors.joining("\n"));
-        } catch (URISyntaxException | IOException e) {
+            byte[] bytes = getClass().getResourceAsStream("/shader/" + name + ".glsl").readAllBytes();
+            return new String(bytes);
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
