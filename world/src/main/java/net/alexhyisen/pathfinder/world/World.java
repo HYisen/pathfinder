@@ -8,6 +8,7 @@ import org.lwjgl.opengl.GL;
 import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
@@ -32,6 +33,8 @@ public class World {
     private boolean changeMode = true;
     private UniBinder uniBinder;
     private TriBinder triBinder;
+
+    private AtomicInteger maxFrameTime = new AtomicInteger(0);
 
     private float metric = 50.0f;
 
@@ -157,6 +160,9 @@ public class World {
                     case GLFW_KEY_F:
                         camera.print();
                         break;
+                    case GLFW_KEY_DELETE:
+                        maxFrameTime.set(0);
+                        break;
                     default:
                         break;
                 }
@@ -239,7 +245,7 @@ public class World {
         var model = new Matrix4f();
         var stubModel = new Matrix4f().setTranslation(0, 4, 0);
 
-        int timestamp = (int) glfwGetTime();
+        double timestamp = glfwGetTime();
         int count = 0;
 
         glEnable(GL_DEPTH_TEST);
@@ -285,15 +291,22 @@ public class World {
                 }
 
                 //manage title
-                int current = (int) glfwGetTime();
-                if (current != timestamp) {
-                    timestamp = current;
-                    glfwSetWindowTitle(window, String.format("%dFPS @ %d sec", count, current));
+                double current = glfwGetTime();
+                int currentS = (int) current;
+                if (currentS != (int) timestamp) {
+                    glfwSetWindowTitle(window, String.format(
+                            "%dFPS @ %d sec # %d ms", count, currentS, maxFrameTime.get()));
                     count = 0;
-                    System.out.println(timestamp);
                 } else {
                     count++;
                 }
+                //update maxFrameTime
+                int elapsedMs = (int) ((current - timestamp) * 1000);
+//                System.out.println(String.format("%f - %f", current, timestamp));
+                if (elapsedMs > maxFrameTime.get()) {//There can be a dirty read, but I don't care, just another try.
+                    maxFrameTime.set(elapsedMs);
+                }
+                timestamp = current;
 
                 //manage background
                 float grey = oscillator.next();
