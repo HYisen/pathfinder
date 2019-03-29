@@ -361,6 +361,10 @@ public class World {
             data[12 * tri + 10] = rand.nextFloat();
             data[12 * tri + 11] = rand.nextFloat();
         }
+
+        if (triBinder != null) {
+            triBinder.delete();
+        }
         triBinder = new TriBinder().setData(data).init(GL_STATIC_DRAW).setProgram(program);
     }
 
@@ -378,6 +382,9 @@ public class World {
             vertices[6 * k + 5] = rand.nextFloat();
         }
 
+        if (uniBinder != null) {
+            uniBinder.delete();
+        }
         uniBinder = new UniBinder()
                 .setVertices(vertices)
                 .setIndices(loader.getShapes().stream().flatMapToInt(Arrays::stream).toArray())
