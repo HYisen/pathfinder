@@ -59,8 +59,6 @@
                         <Label layoutX="67.0" layoutY="32.0" text="Camera Info"/>
                         <ToggleButton fx:id="viewToggleButton" layoutX="218.0" layoutY="28.0" mnemonicParsing="false"
                                       onAction="#handleViewToggleButtonAction" text="View"/>
-                        <ToggleButton fx:id="playToggleButton" layoutX="320.0" layoutY="28.0" mnemonicParsing="false"
-                                      onAction="#handlePlayToggleButtonAction" text="Play"/>
                         <ChoiceBox fx:id="modeChoiceBox" layoutX="458.0" layoutY="28.0" prefHeight="23.0"
                                    prefWidth="92.0"/>
                         <Label layoutX="415.0" layoutY="32.0" text="Mode"/>

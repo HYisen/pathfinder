@@ -1,6 +1,9 @@
 package net.alexhyisen.pathfinder.gui;
 
-import javafx.beans.property.*;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.Property;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -25,19 +28,6 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 public class MainController {
-//    @FXML
-//    private Button nextButton;
-//    @FXML
-//    private Canvas canvas;
-//    @FXML
-//    private ImageView imageView0;
-//    @FXML
-//    private ImageView imageView1;
-//    @FXML
-//    private Slider slider;
-//    @FXML
-//    private ToggleButton toggleButton;
-
     @FXML
     private ChoiceBox<Mode> modeChoiceBox;
 
@@ -73,17 +63,10 @@ public class MainController {
     private ToggleButton viewToggleButton;
 
     @FXML
-    private ToggleButton playToggleButton;
-
-    @FXML
     private GridPane matrixGrid;
 
     @SuppressWarnings("unchecked")
     private Supplier<Double>[] matrixValueGetter = (Supplier<Double>[]) new Supplier[9];
-
-//    private int count = 0;
-//    private Image image0;
-//    private Image image1;
 
     private ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture sf;
@@ -97,35 +80,6 @@ public class MainController {
     private ExecutorService es = Executors.newCachedThreadPool();
     private Future wf;
 
-    private IntegerProperty frameProperty;
-
-//    @FXML
-//    protected void onButtonAction() {
-//        System.out.println("BANG!");
-//        var gc = canvas.getGraphicsContext2D();
-//        gc.setFill(Color.BLACK);
-//        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-//        gc.setFill(Color.CYAN);
-//        gc.fillRect(100, 50, 50, 100);
-//    }
-//
-//    @FXML
-//    protected void onNextButtonAction() {
-//        slider.setValue(slider.getValue() + 1);
-//    }
-//
-//    private void showImage(int id) {
-//        String path0 = "file:///C:\\code\\dataset\\sequences\\00\\image_0\\";
-//        String path1 = "file:///C:\\code\\dataset\\sequences\\00\\image_1\\";
-//        String file = String.format("%06d.png", id);
-//        System.out.println("showImage " + id);
-//        slider.setValue(id);
-//        image0 = new Image(path0 + file);
-//        image1 = new Image(path1 + file);
-//        imageView0.setImage(image0);
-//        imageView1.setImage(image1);
-//    }
-
     //I wish I have the real generic which enable partial template specialization, just like that in cpp.
     private static DoubleProperty manageDoubleParamLine(String name, Pane root, double range) {
         return manageParamLine(name, root, -range, range, 0.0, 0.01, 0.01,
@@ -135,6 +89,7 @@ public class MainController {
     }
 
     //The DRY principle survived. But was it worth it? To extract the boilerplate code, I do harm to its readability.
+    @SuppressWarnings("SameParameterValue")
     private static <ValueType extends Number, PropertyType extends Property<Number>> PropertyType manageParamLine(
             String name, Pane root, ValueType min, ValueType max, ValueType initValue,
             double sliderIncrement, ValueType spinnerStep,
@@ -185,12 +140,6 @@ public class MainController {
 
     @FXML
     public void initialize() {
-//        slider.setBlockIncrement(1);
-//        slider.setMin(0);
-//        slider.setMax(4540);
-//        slider.valueProperty().addListener(v -> showImage((int) slider.getValue()));
-//        slider.setValue(0);
-
         modeChoiceBox.setItems(FXCollections.observableArrayList(Mode.values()));
         modeChoiceBox.getSelectionModel().selectedItemProperty().addListener(
                 (observable, oldValue, newValue) -> {
@@ -208,13 +157,6 @@ public class MainController {
         localCameraInfo[3] = manageDoubleParamLine("Orientation i", paramVBox, 1.0);
         localCameraInfo[4] = manageDoubleParamLine("Orientation j", paramVBox, 1.0);
         localCameraInfo[5] = manageDoubleParamLine("Orientation k", paramVBox, 1.0);
-        paramVBox.getChildren().add(new Separator());
-        frameProperty = manageParamLine("Frame Number", paramVBox,
-                0, 1000, 0, 1.0, 1,
-                SimpleObjectProperty::new,
-                SimpleIntegerProperty::integerProperty,
-                SpinnerValueFactory.IntegerSpinnerValueFactory::new);
-
 
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
@@ -254,20 +196,6 @@ public class MainController {
 
     private void updateMatrix() {
         loader.setMatrix(IntStream.range(0, 9).mapToDouble(v -> matrixValueGetter[v].get()).toArray());
-    }
-
-    @FXML
-    public void handlePlayToggleButtonAction() {
-        if (playToggleButton.isSelected()) {
-            sf = ses.scheduleAtFixedRate(
-                    () -> frameProperty.add(1),
-                    100,
-                    100,
-                    TimeUnit.MILLISECONDS
-            );
-        } else {
-            sf.cancel(false);
-        }
     }
 
     @FXML
