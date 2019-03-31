@@ -14,6 +14,7 @@ public class MainFX extends Application {
         primaryStage.setScene(scene);
         MainController controller = loader.getController();
         primaryStage.setOnCloseRequest(v->controller.shutdown());
+        primaryStage.setTitle("pathfinder");
         primaryStage.show();
     }
 
