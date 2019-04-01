@@ -7,7 +7,7 @@
     <groupId>net.alexhyisen</groupId>
     <artifactId>pathfinder</artifactId>
     <packaging>pom</packaging>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
 
     <build>
         <plugins>
@@ -40,7 +40,6 @@
         <module>utility</module>
         <module>gui</module>
         <module>world</module>
-        <module>back</module>
     </modules>
 
 
