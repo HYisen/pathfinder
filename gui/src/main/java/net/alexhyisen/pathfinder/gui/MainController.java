@@ -13,7 +13,6 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
-import net.alexhyisen.pathfinder.utility.DummyTask;
 import net.alexhyisen.pathfinder.utility.Loader;
 import net.alexhyisen.pathfinder.utility.QuadFunction;
 import net.alexhyisen.pathfinder.world.Mode;
@@ -179,7 +178,19 @@ public class MainController {
         loadPathTextField.setText("manifold_final.off");
 
         //It's it better to use a closure rather than the constructor only class?
-        new ProgressManager(execProgressLabel, execProgressBar, execToggleButton, ses, es, 600, new DummyTask());
+        new ProgressManager(execProgressLabel, execProgressBar, execToggleButton, ses, es, 600,
+                () -> {
+                    try {
+                        var path = Paths.get(execPathTextField.getText()).toAbsolutePath();
+                        System.out.printf("exec path = %s\n", path);
+                        int code = Runtime.getRuntime().exec(path.toString()).waitFor();
+                        System.out.printf("return code = %d\n", code);
+                        return code != 0;
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        return true;
+                    }
+                });
         new ProgressManager(loadProgressLabel, loadProgressBar, loadToggleButton, ses, es, 120,
                 () -> {
                     String text = loadPathTextField.getText();
